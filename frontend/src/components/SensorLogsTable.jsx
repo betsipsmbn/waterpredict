@@ -1,6 +1,6 @@
-import { Download, FileSpreadsheet, Filter, X } from 'lucide-react';
+import { Download, Filter, X } from 'lucide-react';
 import { useState } from 'react';
-import { exportToCSV, exportToExcel } from '../utils/exportData';
+import { exportToCSV } from '../utils/exportData';
 
 export function SensorLogsTable({ logs }) {
   const [showFilters, setShowFilters] = useState(false);
@@ -70,10 +70,6 @@ export function SensorLogsTable({ logs }) {
     exportToCSV(filteredLogs, `sensor-logs-${startDate || 'all'}-to-${endDate || 'all'}.csv`);
   };
 
-  const handleExportExcel = () => {
-    exportToExcel(filteredLogs, `sensor-logs-${startDate || 'all'}-to-${endDate || 'all'}.xlsx`);
-  };
-
   const clearFilters = () => {
     setStartDate('');
     setEndDate('');
@@ -101,13 +97,6 @@ export function SensorLogsTable({ logs }) {
             >
               <Download className="w-4 h-4" />
               Export CSV
-            </button>
-            <button
-              onClick={handleExportExcel}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              Export Excel
             </button>
           </div>
         </div>
@@ -162,28 +151,30 @@ export function SensorLogsTable({ logs }) {
           </div>
         )}
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
+      <div className="overflow-auto max-h-96" style={{ maxHeight: '600px' }}>
+        <table className="w-full min-w-full">
+          <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
-              <th className="px-6 py-3 text-left text-gray-700">Timestamp</th>
-              <th className="px-6 py-3 text-left text-gray-700">pH</th>
-              <th className="px-6 py-3 text-left text-gray-700">TDS</th>
-              <th className="px-6 py-3 text-left text-gray-700">Temperature</th>
-              <th className="px-6 py-3 text-left text-gray-700">Status</th>
-              <th className="px-6 py-3 text-left text-gray-700">Suggest</th>
+              <th className="px-6 py-3 text-left text-gray-700 whitespace-nowrap">Timestamp</th>
+              <th className="px-6 py-3 text-left text-gray-700 whitespace-nowrap">pH</th>
+              <th className="px-6 py-3 text-left text-gray-700 whitespace-nowrap">TDS</th>
+              <th className="px-6 py-3 text-left text-gray-700 whitespace-nowrap">Temperature</th>
+              <th className="px-6 py-3 text-left text-gray-700 whitespace-nowrap">Status</th>
+              <th className="px-6 py-3 text-left text-gray-700 whitespace-nowrap">Suggest</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filteredLogs.map((log) => (
               <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 text-gray-600">{log.timestamp}</td>
-                <td className="px-6 py-4 text-gray-900">{log.pH}</td>
-                <td className="px-6 py-4 text-gray-900">{log.tds} ppm</td>
-                <td className="px-6 py-4 text-gray-900">{log.temperature} °C</td>
-                <td className="px-6 py-4">{getStatusBadge(log.status)}</td>
-                <td className="px-6 py-4 text-gray-700 max-w-xs truncate" title={log.suggest}>
-                  {log.suggest || '-'}
+                <td className="px-6 py-4 text-gray-600 whitespace-nowrap">{log.timestamp}</td>
+                <td className="px-6 py-4 text-gray-900 whitespace-nowrap">{log.pH}</td>
+                <td className="px-6 py-4 text-gray-900 whitespace-nowrap">{log.tds} ppm</td>
+                <td className="px-6 py-4 text-gray-900 whitespace-nowrap">{log.temperature} °C</td>
+                <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(log.status)}</td>
+                <td className="px-6 py-4 text-gray-700 max-w-xs" title={log.suggest}>
+                  <div className="truncate">
+                    {log.suggest || '-'}
+                  </div>
                 </td>
               </tr>
             ))}

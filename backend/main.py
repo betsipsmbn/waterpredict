@@ -18,7 +18,7 @@ from ml.scheduler_antares import poll_antares
 # Load environment variables from .env file
 load_dotenv()
 
-import ml.scheduler # Running Scheduler for training ML model
+import ml.scheduler # Running Scheduler for training ML model >> ubah ENV ke true untuk aktifkan scheduler
 
 
 app = FastAPI(
@@ -27,10 +27,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-#running background task to poll antares
-# @app.on_event("startup")
-# async def start_scheduler():
-#     asyncio.create_task(poll_antares())
+#running background task to poll antares (narik data dari antares secara periodik tiap 5 detik)
+@app.on_event("startup")
+async def start_scheduler():
+    asyncio.create_task(poll_antares())
 
 # Include routers
 app.include_router(health_router, tags=["Health"])

@@ -3,7 +3,6 @@ import { Header } from './Header';
 import { Navigation } from './Navigation';
 import { SensorCard } from './SensorCard';
 import { SensorChart } from './SensorChart';
-import { SensorLogsTable } from './SensorLogsTable';
 import { AlertsSection } from './AlertsSection';
 import { SensorAnalytics } from './SensorAnalytics';
 import { useSettings } from '../context/SettingsContext';
@@ -11,20 +10,18 @@ import { sendTelegramNotification, formatAlertMessage } from '../utils/telegramN
 
 export function MainDashboard({ user, onLogout, onNavigate }) {
   const [currentReadings, setCurrentReadings] = useState({
-    pH: 7.2,
-    tds: 245,
-    temperature: 23.5,
-    status: 'normal',
+    pH: 0,
+    tds: 0,
+    temperature: 0,
+    status: '',
     suggest: '',
     timestamp: null
   });
 
   const [historicalData, setHistoricalData] = useState([]);
-  const [sensorLogs, setSensorLogs] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingChart, setIsLoadingChart] = useState(true);
-  const [isLoadingLogs, setIsLoadingLogs] = useState(true);
   const [error, setError] = useState(null);
 
   const { thresholds, telegramSettings } = useSettings();
@@ -71,7 +68,7 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
   // Function to fetch latest sensor data from backend
   const fetchLatestSensorData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/DataSensorLatest', {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/DataSensorLatestAntares`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -84,15 +81,16 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
 
       const result = await response.json();
       
-      if (result.status === 'success' && result.data && result.data.length > 0) {
-        const latestData = result.data[0];
+      if (result.status === 'success' && result.data) {
+        // Handle direct sensor data from Antares (not array format)
+        const sensorData = result.data;
         setCurrentReadings({
-          pH: Number(latestData.water_ph) || 7.0,
-          tds: Number(latestData.water_tds) || 250,
-          temperature: Number(latestData.water_suhu) || 25.0,
-          status: latestData.water_status || 'normal',
-          suggest: latestData.water_suggest || '',
-          timestamp: latestData.water_timestamp
+          pH: Number(sensorData.ph) || 0,
+          tds: Number(sensorData.tds) || 0,
+          temperature: Number(sensorData.temperature) || 0,
+          status: sensorData.status || '',
+          suggest: sensorData.suggest || '',
+          timestamp: sensorData.timestamp || ''
         });
         setError(null);
       } else {
@@ -111,7 +109,7 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
   const fetch24HourData = async () => {
     try {
       setIsLoadingChart(true);
-      const response = await fetch('http://localhost:8000/ListDataSensor24Hours', {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/ListDataSensor24Hours`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -142,86 +140,115 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
     }
   };
 
-  // Function to fetch sensor logs with optional filters
-  const fetchSensorLogs = async () => {
-    try {
-      setIsLoadingLogs(true);
-      const response = await fetch('http://localhost:8000/ListDataSensor', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
-      const result = await response.json();
-      
-      if (result.status === 'success' && result.data) {
-        // Convert to component format - one row per timestamp with all sensor values
-        const formattedLogs = result.data.slice(0, 50).map((item, index) => ({
-          id: `log-${index}`,
-          timestamp: new Date(item.water_timestamp).toLocaleString(),
-          pH: Number(item.water_ph).toFixed(2),
-          tds: Number(item.water_tds).toFixed(0),
-          temperature: Number(item.water_suhu).toFixed(1),
-          status: item.water_status || 'normal',
-          suggest: item.water_suggest || ''
-        }));
-        
-        setSensorLogs(formattedLogs);
+  // Function to generate alerts based on current sensor readings and thresholds
+  const generateAlerts = (readings, thresholds) => {
+    const alerts = [];
+    const timestamp = readings.timestamp || new Date().toLocaleString();
+
+    // Check pH levels
+    if (readings.pH > 0) { // Only check if we have valid data
+      const phStatus = getSensorStatus('pH', readings.pH);
+      if (phStatus === 'critical') {
+        alerts.push({
+          id: `alert-ph-critical-${Date.now()}`,
+          timestamp,
+          sensor: 'pH',
+          message: `pH level critically out of range (${readings.pH.toFixed(2)}) - Recommended: ${thresholds.phMin} - ${thresholds.phMax}`,
+          severity: 'critical',
+        });
+      } else if (phStatus === 'warning') {
+        alerts.push({
+          id: `alert-ph-warning-${Date.now()}`,
+          timestamp,
+          sensor: 'pH', 
+          message: `pH level outside recommended range (${readings.pH.toFixed(2)}) - Recommended: ${thresholds.phMin} - ${thresholds.phMax}`,
+          severity: 'warning',
+        });
       }
-    } catch (error) {
-      console.error('Error fetching sensor logs:', error);
-    } finally {
-      setIsLoadingLogs(false);
     }
+
+    // Check TDS levels
+    if (readings.tds > 0) { // Only check if we have valid data
+      const tdsStatus = getSensorStatus('tds', readings.tds);
+      if (tdsStatus === 'critical') {
+        alerts.push({
+          id: `alert-tds-critical-${Date.now()}`,
+          timestamp,
+          sensor: 'TDS',
+          message: `TDS level critically high (${readings.tds.toFixed(0)} ppm) - Maximum recommended: ${thresholds.tdsMax} ppm`,
+          severity: 'critical',
+        });
+      } else if (tdsStatus === 'warning') {
+        alerts.push({
+          id: `alert-tds-warning-${Date.now()}`,
+          timestamp,
+          sensor: 'TDS',
+          message: `TDS level above recommended threshold (${readings.tds.toFixed(0)} ppm) - Maximum: ${thresholds.tdsMax} ppm`,
+          severity: 'warning',
+        });
+      }
+    }
+
+    // Check Temperature levels
+    if (readings.temperature > 0) { // Only check if we have valid data
+      const tempStatus = getSensorStatus('temperature', readings.temperature);
+      if (tempStatus === 'critical') {
+        alerts.push({
+          id: `alert-temp-critical-${Date.now()}`,
+          timestamp,
+          sensor: 'Temperature',
+          message: `Temperature critically out of range (${readings.temperature.toFixed(1)}°C) - Recommended: ${thresholds.temperatureMin}°C - ${thresholds.temperatureMax}°C`,
+          severity: 'critical',
+        });
+      } else if (tempStatus === 'warning') {
+        alerts.push({
+          id: `alert-temp-warning-${Date.now()}`,
+          timestamp,
+          sensor: 'Temperature',
+          message: `Temperature outside recommended range (${readings.temperature.toFixed(1)}°C) - Recommended: ${thresholds.temperatureMin}°C - ${thresholds.temperatureMax}°C`,
+          severity: 'warning',
+        });
+      }
+    }
+
+    return alerts;
   };
 
   // Initialize data and start fetching real sensor data
   useEffect(() => {
-    const generateAlerts = () => {
-      const alerts = [
-        {
-          id: 'alert-1',
-          timestamp: new Date(Date.now() - 15 * 60 * 1000).toLocaleString(),
-          sensor: 'TDS',
-          message: 'TDS level above recommended threshold (320 ppm)',
-          severity: 'warning',
-        },
-        {
-          id: 'alert-2',
-          timestamp: new Date(Date.now() - 45 * 60 * 1000).toLocaleString(),
-          sensor: 'pH',
-          message: 'pH level slightly acidic (6.7)',
-          severity: 'warning',
-        },
-      ];
-
-      return alerts;
-    };
-
-    // Initialize alerts
-    setAlerts(generateAlerts());
-    
     // Fetch real data from all endpoints
     fetchLatestSensorData();
     fetch24HourData();
-    fetchSensorLogs();
   }, []);
 
-  // Fetch real-time updates from backend
+  // Fetch real-time updates from backend - Latest sensor data (10 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
-      // Fetch latest data and refresh chart data
-      fetchLatestSensorData();
-      fetch24HourData();
-    }, 30000); // Fetch every 30 seconds
+      fetchLatestSensorData(); // Update sensor cards every 10 seconds
+      generateAlerts(currentReadings, thresholds); // Update alerts based on new readings
+    }, 10000);
 
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch real-time updates from backend - Historical data (1 minute)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch24HourData(); // Update chart data every minute
+    }, 60000); // Fetch every 60 seconds (1 minute)
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update alerts based on current readings and thresholds
+  useEffect(() => {
+    if (currentReadings.timestamp && !isLoading) {
+      const newAlerts = generateAlerts(currentReadings, thresholds);
+      setAlerts(newAlerts);
+    }
+  }, [currentReadings, thresholds, isLoading]);
 
   // Monitor thresholds and send Telegram alerts
   useEffect(() => {
@@ -361,15 +388,7 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
               </div>
             </div>
 
-            {/* Sensor Logs Table */}
-            {isLoadingLogs ? (
-              <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-2 text-gray-600">Loading sensor logs...</span>
-              </div>
-            ) : (
-              <SensorLogsTable logs={sensorLogs} />
-            )}
+
 
             {/* Sensor Analytics */}
             <SensorAnalytics 

@@ -4,6 +4,7 @@ import os, json
 # from backend.routes.ml import predict
 from dotenv import load_dotenv
 
+#function to fetch data from Antares
 
 load_dotenv()
 
@@ -48,3 +49,4 @@ def fetch_detail(uri):
 
 
 #data = fetch_latest()
+#print("Latest data from Antares:", data)

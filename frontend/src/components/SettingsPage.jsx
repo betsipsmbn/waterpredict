@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from './Header';
 import { Navigation } from './Navigation';
 import { Save, Bell, Sliders, Send } from 'lucide-react';
@@ -9,7 +9,12 @@ export function SettingsPage({ user, onLogout, onNavigate }) {
   const { thresholds, setThresholds, telegramSettings, setTelegramSettings } = useSettings();
 
   const [localThresholds, setLocalThresholds] = useState(thresholds);
-  const [localTelegramSettings, setLocalTelegramSettings] = useState(telegramSettings);
+  const [localTelegramSettings, setLocalTelegramSettings] = useState({
+    enabled: false,
+    botToken: '',
+    chatId: '',
+    username: ''
+  });
 
   const [notifications, setNotifications] = useState({
     emailAlerts: true,
@@ -26,39 +31,126 @@ export function SettingsPage({ user, onLogout, onNavigate }) {
 
   const [saved, setSaved] = useState(false);
   const [testNotificationSent, setTestNotificationSent] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    
-    // Save to context
-    setThresholds(localThresholds);
-    setTelegramSettings(localTelegramSettings);
-    
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  // Fetch telegram settings from database
+  const fetchTelegramSettings = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/DataTeleBot`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success' && result.data && result.data.length > 0) {
+          const config = result.data[0];
+          setLocalTelegramSettings({
+            enabled: config.tele_enable === 'Y',
+            botToken: config.tele_token || '',
+            chatId: config.tele_chat_id || '',
+            username: config.tele_username || ''
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching telegram settings:', error);
+    }
   };
 
-  const handleTestTelegramNotification = () => {
+  // Save telegram settings to database
+  const saveTelegramSettings = async (settings) => {
+    try {
+      const params = new URLSearchParams({
+        tele_token: settings.botToken,
+        tele_chat_id: settings.chatId,
+        tele_enable: settings.enabled ? 'Y' : 'N',
+        tele_username: settings.username
+      });
+
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/UpdateTelegramConfig?${params}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Error saving telegram settings:', error);
+      return false;
+    }
+  };
+
+  // Load settings on component mount
+  useEffect(() => {
+    fetchTelegramSettings();
+  }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      // Save to context
+      setThresholds(localThresholds);
+      setTelegramSettings(localTelegramSettings);
+      
+      // Save telegram settings to database
+      const telegramSaved = await saveTelegramSettings(localTelegramSettings);
+      
+      if (telegramSaved) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        alert('Failed to save telegram settings. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Error saving settings. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestTelegramNotification = async () => {
     if (!localTelegramSettings.botToken || !localTelegramSettings.chatId) {
       alert('Please enter both Bot Token and Chat ID');
       return;
     }
 
-    // Send actual Telegram notification
-    sendTelegramNotification(
-      {
-        botToken: localTelegramSettings.botToken,
-        chatId: localTelegramSettings.chatId,
-      },
-      formatTestMessage()
-    ).then((success) => {
-      if (success) {
+    try {
+      setLoading(true);
+      
+      // Test using current local settings
+      const testUrl = `https://api.telegram.org/bot${localTelegramSettings.botToken}/sendMessage`;
+      const response = await fetch(testUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: localTelegramSettings.chatId,
+          text: '🧪 Test Message from Water Quality System!\n\nIf you receive this message, your Telegram bot configuration is working correctly.'
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.ok) {
         setTestNotificationSent(true);
         setTimeout(() => setTestNotificationSent(false), 3000);
       } else {
         alert('Failed to send test notification. Please check your Bot Token and Chat ID.');
       }
-    });
+    } catch (error) {
+      console.error('Error testing telegram:', error);
+      alert('Failed to send test notification. Please check your Bot Token and Chat ID.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -159,7 +251,7 @@ export function SettingsPage({ user, onLogout, onNavigate }) {
             </div>
 
             {/* Notification Settings */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            {/* <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="bg-blue-100 p-2 rounded-lg">
                   <Bell className="w-5 h-5 text-blue-600" />
@@ -223,7 +315,7 @@ export function SettingsPage({ user, onLogout, onNavigate }) {
                   </select>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Telegram Settings */}
             <div className="bg-white rounded-xl shadow-sm p-6">
@@ -293,13 +385,26 @@ export function SettingsPage({ user, onLogout, onNavigate }) {
                   <p className="text-gray-600 mt-1">Your Telegram chat or group ID</p>
                 </div>
 
+                <div>
+                  <label className="block text-gray-700 mb-2">Bot Username (Optional)</label>
+                  <input
+                    type="text"
+                    value={localTelegramSettings.username}
+                    onChange={(e) => setLocalTelegramSettings({ ...localTelegramSettings, username: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="@your_bot_username"
+                  />
+                  <p className="text-gray-600 mt-1">Your Telegram bot username (optional)</p>
+                </div>
+
                 <div className="flex justify-end">
                   <button
                     onClick={handleTestTelegramNotification}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    disabled={loading}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send className="w-5 h-5" />
-                    Test Notification
+                    {loading ? 'Testing...' : 'Test Notification'}
                   </button>
                 </div>
 
@@ -363,10 +468,11 @@ export function SettingsPage({ user, onLogout, onNavigate }) {
             <div className="flex justify-end">
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-5 h-5" />
-                Save Settings
+                {loading ? 'Saving...' : 'Save Settings'}
               </button>
             </div>
           </div>

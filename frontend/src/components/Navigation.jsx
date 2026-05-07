@@ -6,7 +6,7 @@ export function Navigation({ user, currentPage, onNavigate }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
     { id: 'sensors', label: 'Sensor Data', icon: Activity, adminOnly: false },
-    { id: 'alerts', label: 'Alerts', icon: Bell, adminOnly: false },
+    // { id: 'alerts', label: 'Alerts', icon: Bell, adminOnly: false },
     { id: 'settings', label: 'Settings', icon: Settings, adminOnly: false },
     { id: 'users', label: 'User Management', icon: Users, adminOnly: true },
   ];

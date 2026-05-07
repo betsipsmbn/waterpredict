@@ -15,7 +15,7 @@ export function LoginPage({ onLogin }) {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/LoginUser', {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/LoginUser`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

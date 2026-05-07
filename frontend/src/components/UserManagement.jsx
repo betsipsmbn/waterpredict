@@ -26,7 +26,7 @@ export function UserManagement({ user, onLogout, onNavigate }) {
       setUsersLoading(true);
       setUsersError('');
       
-      const response = await fetch('http://localhost:8000/ListUsers', {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/ListUsers`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ export function UserManagement({ user, onLogout, onNavigate }) {
           updatePayload.password = formData.password;
         }
         
-        const response = await fetch('http://localhost:8000/UpdateUser', {
+        const response = await fetch(`${import.meta.env.VITE_BASE_URL}/UpdateUser`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ export function UserManagement({ user, onLogout, onNavigate }) {
         }
       } else {
         // For creating new user, call the API
-        const response = await fetch('http://localhost:8000/createUser', {
+        const response = await fetch(`${import.meta.env.VITE_BASE_URL}/createUser`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

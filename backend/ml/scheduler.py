@@ -4,6 +4,8 @@ from ml.training_service import train_model
 
 import os
 
+#running scheduler untuk training model setiap hari jam 2 pagi
+
 scheduler = BackgroundScheduler()
 
 def scheduled_training():

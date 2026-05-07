@@ -4,11 +4,11 @@ const SettingsContext = createContext(undefined);
 
 export function SettingsProvider({ children }) {
   const [thresholds, setThresholds] = useState({
-    phMin: 6.8,
-    phMax: 7.8,
-    tdsMax: 300,
+    phMin: 6.5,
+    phMax: 8.5,
+    tdsMax: 500,
     temperatureMin: 20,
-    temperatureMax: 28,
+    temperatureMax: 30,
   });
 
   const [telegramSettings, setTelegramSettings] = useState({

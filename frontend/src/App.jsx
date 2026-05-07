@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LoginPage } from './components/LoginPage';
 import { MainDashboard } from './components/MainDashboard';
+import { SensorData } from './components/SensorData';
 import { UserManagement } from './components/UserManagement';
 import { SettingsPage } from './components/SettingsPage';
 import { SettingsProvider } from './context/SettingsContext';
@@ -163,7 +164,7 @@ export default function App() {
           />
         )}
         {currentPage === 'sensors' && (
-          <MainDashboard
+          <SensorData
             user={currentUser}
             onLogout={handleLogout}
             onNavigate={handleNavigate}
