@@ -19,7 +19,7 @@ async def list_datasensor():
             SELECT DATECREATED, WATER_PH, WATER_TDS, WATER_SUHU, 
             WATER_STATUS, WATER_SUGGEST, WATER_TIMESTAMP
             FROM WATER_DATA_SENSOR
-            WHERE PROCESSBY ='ANTARES-API'
+            WHERE PROCESSBY ='FIREBASE-API'
             ORDER BY WATER_TIMESTAMP DESC
             """
             
@@ -75,7 +75,7 @@ async def list_datasensor_24hours():
             SELECT DATECREATED, WATER_PH, WATER_TDS, WATER_SUHU, 
             WATER_STATUS, WATER_SUGGEST, WATER_TIMESTAMP
             FROM WATER_DATA_SENSOR
-            WHERE PROCESSBY = 'ANTARES-API' 
+            WHERE PROCESSBY = 'FIREBASE-API' 
             AND WATER_TIMESTAMP >= SYSDATE - INTERVAL '24' HOUR
             """
             

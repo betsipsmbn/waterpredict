@@ -12,15 +12,15 @@ export function SensorLogsTable({ logs }) {
     const colors = {
       normal: 'bg-green-100 text-green-700',
       'Normal': 'bg-green-100 text-green-700',
-      'tidak layak': 'bg-red-100 text-red-700',
-      'Tidak Layak': 'bg-red-100 text-red-700',
+      'tidak normal': 'bg-red-100 text-red-700',
+      'Tidak Normal': 'bg-red-100 text-red-700',
       // Keep legacy statuses for backward compatibility
       warning: 'bg-yellow-100 text-yellow-700',
       critical: 'bg-red-100 text-red-700',
     };
 
     const displayStatus = status === 'normal' || status === 'Normal' ? 'Normal' : 
-                         status === 'tidak layak' || status === 'Tidak Layak' ? 'Tidak Layak' : 
+                         status === 'tidak normal' || status === 'Tidak Normal' ? 'Tidak Normal' : 
                          status;
 
     return (
@@ -41,7 +41,7 @@ export function SensorLogsTable({ logs }) {
         
         // Handle case variations and normalize status
         const normalizedLogStatus = logStatus.toLowerCase() === 'normal' ? 'Normal' : 
-                                   logStatus.toLowerCase() === 'tidak layak' ? 'Tidak Layak' : 
+                                   logStatus.toLowerCase() === 'tidak normal' ? 'Tidak Normal' : 
                                    logStatus;
         
         return normalizedLogStatus === filterStatus;
@@ -114,7 +114,7 @@ export function SensorLogsTable({ logs }) {
                 >
                   <option value="all">All Status</option>
                   <option value="Normal">Normal</option>
-                  <option value="Tidak Layak">Tidak Layak</option>
+                  <option value="Tidak Normal">Tidak Normal</option>
                 </select>
               </div>
               <div>

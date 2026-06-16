@@ -18,6 +18,12 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
     timestamp: null
   });
 
+  const isNormalWaterStatus = (status) => {
+    if (!status) return false;
+    const normalizedStatus = String(status).trim().toLowerCase();
+    return normalizedStatus === 'normal';
+  };
+
   const [historicalData, setHistoricalData] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +74,7 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
   // Function to fetch latest sensor data from backend
   const fetchLatestSensorData = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/DataSensorLatestAntares`, {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/DataSensorLatest`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -82,15 +88,24 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
       const result = await response.json();
       
       if (result.status === 'success' && result.data) {
-        // Handle direct sensor data from Antares (not array format)
-        const sensorData = result.data;
+        // DataSensorLatest returns array with latest row in first index
+        const sensorData = Array.isArray(result.data) ? result.data[0] : result.data;
+
+        if (!sensorData) {
+          throw new Error('No latest sensor data found in response');
+        }
+
+        const phValue = Number(sensorData.water_ph ?? sensorData.ph) || 0;
+        const tdsValue = Number(sensorData.water_tds ?? sensorData.tds) || 0;
+        const temperatureValue = Number(sensorData.water_suhu ?? sensorData.temperature) || 0;
+
         setCurrentReadings({
-          pH: Number(sensorData.ph) || 0,
-          tds: Number(sensorData.tds) || 0,
-          temperature: Number(sensorData.temperature) || 0,
-          status: sensorData.status || '',
-          suggest: sensorData.suggest || '',
-          timestamp: sensorData.timestamp || ''
+          pH: phValue,
+          tds: tdsValue,
+          temperature: temperatureValue,
+          status: sensorData.water_status || sensorData.status || '',
+          suggest: sensorData.water_suggest || sensorData.suggest || '',
+          timestamp: sensorData.water_timestamp || sensorData.timestamp || ''
         });
         setError(null);
       } else {
@@ -146,74 +161,59 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
   const generateAlerts = (readings, thresholds) => {
     const alerts = [];
     const timestamp = readings.timestamp || new Date().toLocaleString();
+    const backendStatus = readings.status || '';
 
-    // Check pH levels
-    if (readings.pH > 0) { // Only check if we have valid data
+    // Only show alert UI when backend marks water as not normal.
+    if (!backendStatus || isNormalWaterStatus(backendStatus)) {
+      return [];
+    }
+
+    const outOfThresholdParameters = [];
+
+    if (readings.pH > 0) {
       const phStatus = getSensorStatus('pH', readings.pH);
-      if (phStatus === 'critical') {
-        alerts.push({
-          id: `alert-ph-critical-${Date.now()}`,
-          timestamp,
-          sensor: 'pH',
-          message: `pH level critically out of range (${readings.pH.toFixed(2)}) - Recommended: ${thresholds.phMin} - ${thresholds.phMax}`,
-          severity: 'critical',
-        });
-      } else if (phStatus === 'warning') {
-        alerts.push({
-          id: `alert-ph-warning-${Date.now()}`,
-          timestamp,
-          sensor: 'pH', 
-          message: `pH level outside recommended range (${readings.pH.toFixed(2)}) - Recommended: ${thresholds.phMin} - ${thresholds.phMax}`,
-          severity: 'warning',
-        });
+      if (phStatus !== 'normal') {
+        outOfThresholdParameters.push(
+          `pH ${readings.pH.toFixed(2)} (recommended ${thresholds.phMin} - ${thresholds.phMax})`
+        );
       }
     }
 
-    // Check TDS levels
-    if (readings.tds > 0) { // Only check if we have valid data
+    if (readings.tds > 0) {
       const tdsStatus = getSensorStatus('tds', readings.tds);
-      if (tdsStatus === 'critical') {
-        alerts.push({
-          id: `alert-tds-critical-${Date.now()}`,
-          timestamp,
-          sensor: 'TDS',
-          message: `TDS level critically high (${readings.tds.toFixed(0)} ppm) - Maximum recommended: ${thresholds.tdsMax} ppm`,
-          severity: 'critical',
-        });
-      } else if (tdsStatus === 'warning') {
-        alerts.push({
-          id: `alert-tds-warning-${Date.now()}`,
-          timestamp,
-          sensor: 'TDS',
-          message: `TDS level above recommended threshold (${readings.tds.toFixed(0)} ppm) - Maximum: ${thresholds.tdsMax} ppm`,
-          severity: 'warning',
-        });
+      if (tdsStatus !== 'normal') {
+        outOfThresholdParameters.push(
+          `TDS ${readings.tds.toFixed(0)} ppm (max ${thresholds.tdsMax} ppm)`
+        );
       }
     }
 
-    // Check Temperature levels
-    if (readings.temperature > 0) { // Only check if we have valid data
-      const tempStatus = getSensorStatus('temperature', readings.temperature);
-      if (tempStatus === 'critical') {
-        alerts.push({
-          id: `alert-temp-critical-${Date.now()}`,
-          timestamp,
-          sensor: 'Temperature',
-          message: `Temperature critically out of range (${readings.temperature.toFixed(1)}°C) - Recommended: ${thresholds.temperatureMin}°C - ${thresholds.temperatureMax}°C`,
-          severity: 'critical',
-        });
-      } else if (tempStatus === 'warning') {
-        alerts.push({
-          id: `alert-temp-warning-${Date.now()}`,
-          timestamp,
-          sensor: 'Temperature',
-          message: `Temperature outside recommended range (${readings.temperature.toFixed(1)}°C) - Recommended: ${thresholds.temperatureMin}°C - ${thresholds.temperatureMax}°C`,
-          severity: 'warning',
-        });
+    if (readings.temperature > 0) {
+      const temperatureStatus = getSensorStatus('temperature', readings.temperature);
+      if (temperatureStatus !== 'normal') {
+        outOfThresholdParameters.push(
+          `Temperature ${readings.temperature.toFixed(1)}°C (recommended ${thresholds.temperatureMin}°C - ${thresholds.temperatureMax}°C)`
+        );
       }
     }
 
-    return alerts;
+    const unmatchedParametersText = outOfThresholdParameters.length > 0
+      ? outOfThresholdParameters.join(', ')
+      : 'No threshold mismatch detected from the current values.';
+
+    const suggestionText = readings.suggest
+      ? ` Suggestion: ${readings.suggest}`
+      : '';
+
+    alerts.push({
+      id: `alert-water-status-${Date.now()}`,
+      timestamp,
+      sensor: 'Water Quality',
+      message: `Status ${backendStatus}. ${unmatchedParametersText}.${suggestionText}`,
+      severity: outOfThresholdParameters.length > 1 ? 'critical' : 'warning',
+    });
+
+    return alerts.slice(0, 1); // Keep only the most recent alert
   };
 
   // Initialize data and start fetching real sensor data
@@ -227,7 +227,6 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchLatestSensorData(); // Update sensor cards every 10 seconds
-      generateAlerts(currentReadings, thresholds); // Update alerts based on new readings
     }, 10000);
 
     return () => clearInterval(interval);
@@ -284,15 +283,6 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
           telegramSettings,
           formatAlertMessage(sensor, value, status, timestamp)
         );
-
-        // Add to alerts list
-        setAlerts(prev => [{
-          id: `alert-${Date.now()}`,
-          timestamp,
-          sensor,
-          message: `${sensor} level ${status === 'critical' ? 'critically ' : ''}out of range (${value}${sensor === 'TDS' ? ' ppm' : sensor === 'Temperature' ? ' °C' : ''})`,
-          severity: status,
-        }, ...prev].slice(0, 10)); // Keep last 10 alerts
       }
     };
 

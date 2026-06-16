@@ -27,7 +27,7 @@ def load_data():
     query = """
     SELECT WATER_PH as PH, WATER_TDS as TDS, WATER_SUHU as TEMPERATURE, WATER_STATUS as STATUS, WATER_SUGGEST as SUGGEST
     FROM WATER_DATA_SENSOR
-    WHERE WATER_STATUS IS NOT NULL
+    WHERE WATER_STATUS IS NOT NULL and PROCESSBY = 'TRAINING'
     """
 
     df = pd.read_sql(query, conn)
@@ -51,7 +51,7 @@ def save_data(data):
     # Insert new data
     insert_sql = """
     INSERT INTO WATER_DATA_SENSOR (DATECREATED, PROCESSBY, WATER_PH, WATER_TDS, WATER_SUHU, WATER_TIMESTAMP, ct, WATER_STATUS, WATER_SUGGEST)
-    VALUES (SYSDATE, 'ANTARES-API', :ph, :tds, :temperature, TO_TIMESTAMP(:timestamp, 'YYYY-MM-DD HH24:MI:SS'), :ct, :status, :suggest)
+    VALUES (SYSDATE, 'FIREBASE-API', :ph, :tds, :temperature, TO_TIMESTAMP(:timestamp, 'YYYY-MM-DD HH24:MI:SS'), :ct, :status, :suggest)
     """
     
     cursor.execute(insert_sql, {

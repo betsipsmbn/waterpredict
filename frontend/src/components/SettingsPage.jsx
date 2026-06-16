@@ -418,7 +418,7 @@ export function SettingsPage({ user, onLogout, onNavigate }) {
             </div>
 
             {/* System Settings */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            {/* <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="mb-6">
                 <h2 className="text-gray-900">System Configuration</h2>
                 <p className="text-gray-600">General system settings</p>
@@ -462,7 +462,7 @@ export function SettingsPage({ user, onLogout, onNavigate }) {
                   />
                 </label>
               </div>
-            </div>
+            </div> */}
 
             {/* Save Button */}
             <div className="flex justify-end">

@@ -309,3 +309,5 @@ logs/
 config.ini
 secrets.json
 .secrets
+
+backend/firebase-keywaterpred.json

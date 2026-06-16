@@ -20,7 +20,7 @@ def insert_sensor_data(ph, tds, temperature, ct, timestamp):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO WATER_DATA_SENSOR (DATECREATED, PROCESSBY, WATER_PH, WATER_TDS, WATER_SUHU, WATER_STATUS, WATER_SUGGEST, ct, WATER_TIMESTAMP) VALUES (SYSDATE, 'ANTARES-API', :ph, :tds, :suhu, :status, :suggest, :ct, :timestamp)",
+        "INSERT INTO WATER_DATA_SENSOR (DATECREATED, PROCESSBY, WATER_PH, WATER_TDS, WATER_SUHU, WATER_STATUS, WATER_SUGGEST, ct, WATER_TIMESTAMP) VALUES (SYSDATE, 'FIREBASE-API', :ph, :tds, :suhu, :status, :suggest, :ct, :timestamp)",
         [ph, tds, temperature, None, None, ct, timestamp]
     )
     conn.commit()

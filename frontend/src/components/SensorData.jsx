@@ -144,9 +144,9 @@ export function SensorData({ user, onLogout, onNavigate }) {
                     </svg>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Normal Status</p>
+                    <p className="text-sm font-medium text-gray-600">Normal</p>
                     <p className="text-2xl font-semibold text-gray-900">
-                      {sensorLogs.filter(log => log.status === 'normal').length}
+                      {sensorLogs.filter(log => log.status === 'Normal').length}
                     </p>
                   </div>
                 </div>
@@ -160,15 +160,15 @@ export function SensorData({ user, onLogout, onNavigate }) {
                     </svg>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Warning Status</p>
+                    <p className="text-sm font-medium text-gray-600">Tidak Normal</p>
                     <p className="text-2xl font-semibold text-gray-900">
-                      {sensorLogs.filter(log => log.status === 'warning').length}
+                      {sensorLogs.filter(log => log.status === 'Tidak Normal').length}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              {/* <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-red-100 rounded-lg">
                     <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,7 +182,7 @@ export function SensorData({ user, onLogout, onNavigate }) {
                     </p>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Sensor Logs Table */}

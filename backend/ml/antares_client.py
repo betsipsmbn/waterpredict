@@ -48,5 +48,5 @@ def fetch_detail(uri):
 
 
 
-#data = fetch_latest()
-#print("Latest data from Antares:", data)
+# data = fetch_latest()
+# print("Latest data from Antares:", data)

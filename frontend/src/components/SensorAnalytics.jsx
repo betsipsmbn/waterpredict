@@ -196,7 +196,7 @@ export function SensorAnalytics({ data, currentReadings, waterSuggestion }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <PredictionChart 
           data={phStats.predictions}
           title="pH Level"
@@ -212,7 +212,7 @@ export function SensorAnalytics({ data, currentReadings, waterSuggestion }) {
           title="Temperature"
           color="#f59e0b"
         />
-      </div>
+      </div> */}
 
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h4 className="text-gray-900 mb-4">AI Insights & Recommendations</h4>

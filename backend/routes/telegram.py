@@ -49,5 +49,3 @@ async def send_telegram(message):
         print(f"Error sending telegram: {str(e)}")
         return False
 
-
-#data = send_telegram("Hello, this is a test message from your water quality monitoring system!");
