@@ -27,7 +27,7 @@ export function SensorData({ user, onLogout, onNavigate }) {
       
       if (result.status === 'success' && result.data) {
         // Convert to component format - one row per timestamp with all sensor values
-        const formattedLogs = result.data.slice(0, 100).map((item, index) => ({
+        const formattedLogs = result.data.map((item, index) => ({
           id: `log-${index}`,
           timestamp: item.water_timestamp ? new Date(item.water_timestamp).toLocaleString() : null,
           pH: Number(item.water_ph).toFixed(2),
@@ -53,11 +53,11 @@ export function SensorData({ user, onLogout, onNavigate }) {
     fetchSensorLogs();
   }, []);
 
-  // Auto-refresh sensor logs every 2 minutes
+  // Auto-refresh sensor logs every 10 minutes
   useEffect(() => {
     const interval = setInterval(() => {
       fetchSensorLogs();
-    }, 120000); // Refresh every 2 minutes
+    }, 600000); // Refresh every 10 minutes
 
     return () => clearInterval(interval);
   }, []);

@@ -381,11 +381,11 @@ export function MainDashboard({ user, onLogout, onNavigate }) {
 
 
             {/* Sensor Analytics */}
-            <SensorAnalytics 
+            {/* <SensorAnalytics 
               data={historicalData} 
               currentReadings={currentReadings}
               waterSuggestion={currentReadings.suggest}
-            />
+            /> */}
           </div>
         </main>
       </div>

@@ -161,7 +161,7 @@ async def poll_firebase():
         except Exception as e:
             print(f"[FIREBASE] Error in polling cycle: {str(e)}")
         
-        # Wait before next polling cycle (30 seconds)
-        print("[FIREBASE] Waiting 30 seconds before next poll...")
-        await asyncio.sleep(30)
+        # Wait before next polling cycle (5 seconds)
+        print("[FIREBASE] Waiting 5 seconds before next poll...")
+        await asyncio.sleep(3)
 
